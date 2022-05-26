@@ -274,9 +274,13 @@ public class SIG extends javax.swing.JFrame {
     }
 
     public IMDTableModel getIMDTableModel() {
+        if (IMDTableModel == null) {
+            IMDTableModel = new IMDTableModel(getInvoices());
+        }
         return IMDTableModel;
     }
 
+        
     public void setIMDTableModel(IMDTableModel IMDTableModel) {
         this.IMDTableModel = IMDTableModel;
     }

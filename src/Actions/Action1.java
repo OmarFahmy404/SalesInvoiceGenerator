@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
@@ -52,7 +53,7 @@ LineD lineDailog;
             CreateNewItem();
             break;
         case "Delete Item":
-            DeleteItem();
+           deleteItem();
             break;
         case "MainInvoiceOk":
             MainInvoiceOk();
@@ -88,74 +89,76 @@ LineD lineDailog;
     }
     }
     
-
     private void LoadFile() {
-        JFileChooser fc=new JFileChooser();
-       int result= fc.showOpenDialog(sig);
-        if (result==JFileChooser.APPROVE_OPTION) {
-            File f=fc.getSelectedFile();
-            Path p=Paths.get(f.getAbsolutePath() );
-             List<String> lines = null;
-            try {
-                 lines=Files.readAllLines(p);
-            } catch (IOException ex) {
-               ex.getStackTrace();
-            }
-            ArrayList<InvoiseData.InvoiceMainData> invoiceArray=new ArrayList<>();
-            for (String line : lines) {
-                String[] splitParts=line.split(",");
-                int invoNum=Integer.parseInt(splitParts[0]);
-                String invoDate=splitParts[1];
-                String name=splitParts[2];
-                InvoiceMainData IMD=new InvoiceMainData(invoNum, invoDate, name);
-                invoiceArray.add(IMD);}
-//                System.out.println("check point");
-                
-                
-                
-                 JFileChooser lfc=new JFileChooser();
-                  int lresult= lfc.showOpenDialog(sig);
-                if (result==JFileChooser.APPROVE_OPTION) {
-            File lf=lfc.getSelectedFile();
-            Path lp=Paths.get(lf.getAbsolutePath() );
-             List<String> llines = null;
-            try {
-                 llines=Files.readAllLines(lp);
-            } catch (IOException ex) {
-               ex.getStackTrace();
-            }
-           // ArrayList<InvoiseData.InvoiceMainData> invoiceArray=new ArrayList<>();
-            for (String lline : llines) {
-                String[] lsplitParts=lline.split(",");
-                int num=Integer.parseInt(lsplitParts[0]);
-                String item=lsplitParts[1];
-                int count =Integer.parseInt(lsplitParts[3]);
-                double price=Integer.parseInt(lsplitParts[2]);
-       //                         System.out.println("check point");
+        JFileChooser fc = new JFileChooser();
+        try {
+            int result = fc.showOpenDialog(sig);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File hf = fc.getSelectedFile();
+                Path hp = Paths.get(hf.getAbsolutePath());
+                List<String> hls = Files.readAllLines(hp);
+               // System.out.println("Invoices have been read");
+               
+                ArrayList<InvoiceMainData> invoiceArray = new ArrayList<>();
+                for (String hl : hls) {
+                    try {
+                        String[] parts = hl.split(",");
+                        int num = Integer.parseInt(parts[0]);
+                        String date = parts[1];
+                        String name = parts[2];
 
-                InvoiceMainData inv=null;
-                for(InvoiceMainData invoice:invoiceArray){
-                    if (invoice.getNum()==num) {
-                        inv = invoice;
-                        //break;
+                        InvoiceMainData invoice = new InvoiceMainData(num, date, name);
+                        invoiceArray.add(invoice);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(sig, "Error in line format", "Error", JOptionPane.ERROR_MESSAGE);
                     }
-                        
-                    }
-               // System.out.println("check point");
-                InvoiceDetials ID=new InvoiceDetials( item, count, price, inv);
-                inv.getDetials().add(ID);
-               // System.out.println("check point");
                 }
+                System.out.println("Check point");
+                result = fc.showOpenDialog(sig);
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    File lf = fc.getSelectedFile();
+                    Path lp = Paths.get(lf.getAbsolutePath());
+                    List<String> lls = Files.readAllLines(lp);
+                    System.out.println("Lines have been read");
+                    for (String ll : lls) {
+                        try {
+                            String[] lps = ll.split(",");
+                            int num = Integer.parseInt(lps[0]);
+                            String name = lps[1];
+                            double price = Double.parseDouble(lps[2]);
+                            int count = Integer.parseInt(lps[3]);
+                            InvoiceMainData inv = null;
+                            for (InvoiceMainData invoice : invoiceArray) {
+                                if (invoice.getNum() == num) {
+                                    inv = invoice;
+                                    break;
+                                }
+                            }
+
+                            InvoiceDetials line = new InvoiceDetials(name, count, price, inv);
+                            inv.getDetials().add(line);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                            JOptionPane.showMessageDialog(sig, "Error in line format", "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+                   // System.out.println("Check point");
                 }
                 sig.setInvoices(invoiceArray);
-                IMDTableModel imdTableModel=new IMDTableModel(invoiceArray);
-                sig.setIMDTableModel(imdTableModel);
-                sig.getMainInvoice().setModel(imdTableModel);        
+                IMDTableModel invoicesTableModel = new IMDTableModel(invoiceArray);
+                sig.setIMDTableModel(invoicesTableModel);
+                sig.getMainInvoice().setModel(invoicesTableModel);
                 sig.getIMDTableModel().fireTableDataChanged();
-         }
-      
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(sig, "Cannot read file", "Error", JOptionPane.ERROR_MESSAGE);
         }
- 
+    }
+
+
+  
     private void SaveFile() {
         ArrayList<InvoiceMainData> invoices=sig.getInvoices();
         String invMain="";
@@ -221,7 +224,7 @@ LineD lineDailog;
         lineDailog.setVisible(true);
     }
 
-    private void DeleteItem() {
+    /*private void DeleteItem() {
         int selectedMainRow=sig.getMainInvoice().getSelectedRow();
         int selectedRow=sig.getDetailsinvoice().getSelectedRow();
         if(selectedMainRow != -1 && selectedRow != -1){
@@ -233,17 +236,47 @@ LineD lineDailog;
             invdetaiTM.fireTableDataChanged();
             sig.getIMDTableModel().fireTableDataChanged();
         }
+    }*/
+    
+    private void deleteItem() {
+        int selectedRow = sig.getDetailsinvoice().getSelectedRow();
+
+        if (selectedRow != -1) {
+            IDTabelModel linesTableModel = (IDTabelModel) sig.getDetailsinvoice().getModel();
+            linesTableModel.getDetials().remove(selectedRow);
+            linesTableModel.fireTableDataChanged();
+            sig.getIMDTableModel().fireTableDataChanged();
+        }
     }
 
+
     private void MainInvoiceOk() {
-        String Date=invDailog.getInvoiceDate().getText();
-        String Name=invDailog.getCustomerName().getText();
-        int number=sig.getNextNumOfMI();
-        InvoiceMainData invoice= new InvoiceMainData(number, Date, Name);
-        sig.getInvoices().add(invoice);
-        sig.getIMDTableModel().fireTableDataChanged();
-        invDailog.dispose();
-        invDailog=null;
+   
+        String date = invDailog.getInvoiceDate().getText();
+        String customer = invDailog.getCustomerName().getText();
+        int num = sig.getNextNumOfMI();
+        try {
+            String[] dateParts = date.split("-");  // 
+            if (dateParts.length < 3) {
+                JOptionPane.showMessageDialog(sig, "Wrong date format", "Error", JOptionPane.ERROR_MESSAGE);
+            } else {
+                int day = Integer.parseInt(dateParts[0]);
+                int month = Integer.parseInt(dateParts[1]);
+                int year = Integer.parseInt(dateParts[2]);
+                if (day > 31 || month > 12) {
+                    JOptionPane.showMessageDialog(sig, "Wrong date format", "Error", JOptionPane.ERROR_MESSAGE);
+                } else {
+                    InvoiceMainData invoice = new InvoiceMainData(num, date, customer);
+                    sig.getInvoices().add(invoice);
+                    sig.getIMDTableModel().fireTableDataChanged();
+                    invDailog.setVisible(false);
+                    invDailog.dispose();
+                    invDailog = null;
+                }
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(sig, "Wrong date format", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void MainInvoiceCancel() {
